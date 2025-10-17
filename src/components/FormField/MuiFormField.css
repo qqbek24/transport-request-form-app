@@ -1,0 +1,13 @@
+.mui-form-field {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mui-form-field .MuiFormLabel-asterisk {
+  color: #dc3545;
+}
+
+.mui-form-field-error {
+  color: #d32f2f;
+  font-size: 12px;
+}
