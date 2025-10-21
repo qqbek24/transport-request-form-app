@@ -1,0 +1,33 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Proxy settings for corporate network
+ENV https_proxy='http://165.225.206.24:10299' \
+    http_proxy='http://165.225.206.24:10299' \
+    HTTPS_PROXY='http://165.225.206.24:10299' \
+    HTTP_PROXY='http://165.225.206.24:10299' \
+    no_proxy='localhost,127.0.0.1,backend,frontend,nginx'
+
+# Copy Zscaler certificate and update CA certificates
+COPY ./zscaler.crt /usr/local/share/ca-certificates/
+RUN apt-get update && \
+    apt-get install -y ca-certificates curl && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY ./backend/requirements_fastapi.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy backend code
+COPY ./backend .
+
+# Create directories for files
+RUN mkdir -p attachments data
+
+# Expose port 8000
+EXPOSE 8000
+
+# Run the FastAPI application
+CMD ["uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

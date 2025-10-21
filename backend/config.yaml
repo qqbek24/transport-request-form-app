@@ -1,0 +1,58 @@
+# use what needed, you have much freedom here
+# but remember to keep the structure of branches - dev/test/prod/default
+# default branch is loaded always but superseeded by the branch you are running on (bot_mode)
+dev:
+  sap_system: "ACE"
+  sharepoint_site: "https://your-sharepoint-site.sharepoint.com/sites/transport-dev"
+  excel_file_path: "/Shared Documents/transport_requests_dev.xlsx"
+  attachments_folder: "/Shared Documents/Attachments/dev"
+test:
+  sap_system: "ACE"
+  sharepoint_site: "https://your-sharepoint-site.sharepoint.com/sites/transport-test"
+  excel_file_path: "/Shared Documents/transport_requests_test.xlsx"
+  attachments_folder: "/Shared Documents/Attachments/test"
+prod:
+  sap_system: "PCE"
+  sharepoint_site: "https://your-sharepoint-site.sharepoint.com/sites/transport"
+  excel_file_path: "/Shared Documents/transport_requests.xlsx"
+  attachments_folder: "/Shared Documents/Attachments"
+default:
+  developer: 'mail@arcelor'
+  sap_client: '100'
+  sap_language: 'EN'
+  company_code: '086'
+  layout: '//YPAYABLESR'
+  max_run_time: 30  # in minutes
+  teams_folder: 'path_here'
+  input_file: 'path_here'
+  
+  # Transport Application Settings
+  transport:
+    # Local development paths (relative to backend folder)
+    local_attachments_folder: "./attachments"
+    local_excel_file: "./data/transport_requests.xlsx"
+    
+    # SharePoint production settings
+    sharepoint_site: "https://your-sharepoint-site.sharepoint.com/sites/transport"
+    sharepoint_excel_path: "/Shared Documents/transport_requests.xlsx"
+    sharepoint_attachments_folder: "/Shared Documents/Attachments"
+    
+    # SharePoint authentication (when needed)
+    # client_id: "your_client_id"
+    # client_secret: "your_client_secret"
+    # tenant_id: "your_tenant_id"
+
+
+# you can do it like this:
+# nest types or module names
+# default:
+#   sap:
+#     client: '100'
+#     language: 'EN'
+#     company_code: '086'
+#     layout: '//YPAYABLESR'
+#   module_name:
+#     param1: 'value1'
+#     param2: 'value2'
+#   module_name2:
+#     paramlist: ['1', '2', '3']
