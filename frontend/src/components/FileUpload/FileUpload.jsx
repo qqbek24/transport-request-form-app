@@ -1,11 +1,20 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { useDropzone } from 'react-dropzone'
 import './FileUpload.css'
 
-const FileUpload = ({ onFilesChange, maxFiles = 5, maxSize = 10 * 1024 * 1024 }) => { // 10MB default
+const FileUpload = ({ onFilesChange, maxFiles = 5, maxSize = 10 * 1024 * 1024, clearFiles = false }) => { // 10MB default
   const [files, setFiles] = useState([])
   const [uploadError, setUploadError] = useState('')
+
+  // Clear files when parent component requests it
+  useEffect(() => {
+    if (clearFiles) {
+      setFiles([])
+      setUploadError('')
+      onFilesChange([])
+    }
+  }, [clearFiles, onFilesChange])
 
   const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
     setUploadError('')
@@ -144,7 +153,8 @@ const FileUpload = ({ onFilesChange, maxFiles = 5, maxSize = 10 * 1024 * 1024 })
 FileUpload.propTypes = {
   onFilesChange: PropTypes.func.isRequired,
   maxFiles: PropTypes.number,
-  maxSize: PropTypes.number
+  maxSize: PropTypes.number,
+  clearFiles: PropTypes.bool
 }
 
 export default FileUpload

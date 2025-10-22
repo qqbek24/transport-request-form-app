@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"  # Optional for HTTPS in the future
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro  # Optional for HTTPS certificates
+    depends_on:
+      - frontend
+      - backend
+    restart: always
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    # No external ports - only accessible through nginx
+    volumes:
+      - "./backend/attachments:/app/attachments"
+      - "./backend/data:/app/data"
+    environment:
+      - ENV=development
+      - PYTHONPATH=/app
+    restart: always
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    # No external ports - only accessible through nginx
+    environment:
+      - REACT_APP_API_URL=/api  # Proxy through nginx
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

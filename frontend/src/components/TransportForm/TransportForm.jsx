@@ -24,13 +24,13 @@ const TransportForm = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState([])
+  const [clearFileUpload, setClearFileUpload] = useState(false)
   
   const {
     handleSubmit,
     formState: { errors, isValid },
     reset,
   control
-// register removed, not needed with MuiFormField
   } = useForm({
     resolver: yupResolver(schema),
     mode: 'onChange',
@@ -50,26 +50,54 @@ const TransportForm = () => {
   const onSubmit = async (data) => {
     setIsSubmitting(true)
     try {
-      // Prepare form data for sending, including files if any
+      // Prepare form data for FastAPI backend
       const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
+      
+      // Convert form data to JSON string for the 'data' field
+      const jsonData = {
+        deliveryNoteNumber: data.deliveryNoteNumber,
+        truckLicensePlates: data.truckLicensePlates,
+        trailerLicensePlates: data.trailerLicensePlates,
+        carrierCountry: data.carrierCountry,
+        carrierTaxCode: data.carrierTaxCode,
+        carrierFullName: data.carrierFullName,
+        borderCrossing: data.borderCrossing,
+        borderCrossingDate: data.borderCrossingDate ? data.borderCrossingDate.toISOString().split('T')[0] : ''
+      };
+      
+      formData.append('data', JSON.stringify(jsonData));
+      
+      // Add single attachment if exists (first file only)
       if (uploadedFiles && uploadedFiles.length > 0) {
-        uploadedFiles.forEach((fileObj) => {
-          formData.append('attachments', fileObj.file);
-        });
+        formData.append('attachment', uploadedFiles[0].file);
       }
-      // Example: send to backend (uncomment and adjust URL as needed)
-      // await fetch('/api/submit', { method: 'POST', body: formData });
-      console.log('FormData entries:', Array.from(formData.entries()));
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      alert('Form submitted successfully!')
+      
+      // Send to FastAPI backend (development mode - direct connection)
+      const response = await fetch('http://localhost:8000/api/submit', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to submit form');
+      }
+      
+      const result = await response.json();
+      console.log('Submit response:', result);
+      
+      alert(`Form submitted successfully! Request ID: ${result.request_id}`);
+      
+      // Clear form and files
       reset()
       setUploadedFiles([])
+      setClearFileUpload(true)
+      
+      // Reset clearFileUpload flag after a brief delay
+      setTimeout(() => setClearFileUpload(false), 100)
     } catch (error) {
-      alert('Error submitting form. Please try again.')
+      console.error('Submit error:', error);
+      alert(`Error submitting form: ${error.message}. Please try again.`);
     } finally {
       setIsSubmitting(false)
     }
@@ -151,7 +179,10 @@ const TransportForm = () => {
             />
           </div>
           <hr className="form-divider" />
-          <FileUpload onFilesChange={setUploadedFiles} />
+          <FileUpload 
+            onFilesChange={setUploadedFiles} 
+            clearFiles={clearFileUpload}
+          />
         </div>
         <div className="form-actions">
           <button
