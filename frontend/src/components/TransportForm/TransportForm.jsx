@@ -5,6 +5,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import MuiFormField from '../FormField/MuiFormField'
 import FileUpload from '../FileUpload/FileUpload'
+import logger from '../../utils/logger'
 import './TransportForm.css'
 
 
@@ -49,6 +50,17 @@ const TransportForm = () => {
 
   const onSubmit = async (data) => {
     setIsSubmitting(true)
+    
+    // Prepare logging data
+    const formDataForLogging = {
+      ...data,
+      attachment: uploadedFiles && uploadedFiles.length > 0 ? uploadedFiles[0].file : null,
+      borderCrossingDate: data.borderCrossingDate ? data.borderCrossingDate.toISOString().split('T')[0] : ''
+    };
+    
+    // Log form submission attempt
+    logger.logFormSubmit(formDataForLogging, 'ATTEMPT');
+    
     try {
       // Prepare form data for FastAPI backend
       const formData = new FormData();
@@ -80,11 +92,20 @@ const TransportForm = () => {
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to submit form');
+        const errorMsg = errorData.detail || 'Failed to submit form';
+        
+        // Log API error
+        logger.logFormSubmit(formDataForLogging, 'ERROR', errorMsg);
+        logger.logApiError('/api/submit', new Error(errorMsg), jsonData);
+        
+        throw new Error(errorMsg);
       }
       
       const result = await response.json();
       console.log('Submit response:', result);
+      
+      // Log successful submission
+      logger.logFormSubmit(formDataForLogging, 'SUCCESS', null, result.request_id);
       
       alert(`Form submitted successfully! Request ID: ${result.request_id}`);
       
@@ -97,6 +118,16 @@ const TransportForm = () => {
       setTimeout(() => setClearFileUpload(false), 100)
     } catch (error) {
       console.error('Submit error:', error);
+      
+      // Determine error type
+      let errorType = 'ERROR';
+      if (error.name === 'TypeError' || error.message.includes('fetch')) {
+        errorType = 'NETWORK_ERROR';
+        logger.logApiError('/api/submit', error, formDataForLogging);
+      }
+      
+      // Log error
+      logger.logFormSubmit(formDataForLogging, errorType, error.message);
       alert(`Error submitting form: ${error.message}. Please try again.`);
     } finally {
       setIsSubmitting(false)

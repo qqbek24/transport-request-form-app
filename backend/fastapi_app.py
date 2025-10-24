@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
@@ -10,10 +10,17 @@ import json
 import logging
 import yaml
 from pathlib import Path
+import time
+
+# Import our custom logger
+from logger_config import get_logger
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Get structured logger
+app_logger = get_logger()
 
 # Load configuration
 def load_config():
@@ -55,15 +62,24 @@ class TransportRequest(BaseModel):
 
 @app.post("/api/submit")
 async def submit_transport_request(
+    request: Request,
     data: str = Form(...),  # JSON as form field (not file!)
     attachment: Optional[UploadFile] = File(None)
 ):
     """
     Accepts JSON data (as form field) and optional file. Returns unique request ID.
     """
+    start_time = time.time()
+    user_ip = request.client.host if request.client else "unknown"
+    
     logger.info("=== NEW SUBMIT REQUEST ===")
     logger.info(f"Received data: {data}")
     logger.info(f"Attachment: {attachment.filename if attachment else 'None'}")
+    
+    # Generate unique request ID first for logging
+    now = datetime.now().strftime("%Y%m%d-%H%M%S")
+    rand = random.randint(100, 999)
+    request_id = f"REQ-{now}-{rand}"
     
     try:
         # Parse JSON data
@@ -71,18 +87,50 @@ async def submit_transport_request(
         logger.info(f"Parsed JSON: {data_dict}")
         req = TransportRequest(**data_dict)
         logger.info("Data validation successful")
+        logger.info(f"Generated request ID: {request_id}")
+        
+        # Log form submission attempt
+        app_logger.log_form_submit(
+            form_data=data_dict,
+            attachment_name=attachment.filename if attachment else None,
+            status="PROCESSING",
+            request_id=request_id,
+            user_ip=user_ip
+        )
+        
     except json.JSONDecodeError as e:
         logger.error(f"JSON decode error: {e}")
+        
+        # Log failed submission
+        app_logger.log_form_submit(
+            form_data={"raw_data": data},
+            status="ERROR",
+            error_message=f"JSON decode error: {e}",
+            request_id=request_id,
+            user_ip=user_ip
+        )
+        
         raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+        
     except Exception as e:
         logger.error(f"Data validation error: {e}")
+        
+        # Log validation error
+        try:
+            parsed_data = json.loads(data)
+        except:
+            parsed_data = {"raw_data": data}
+            
+        app_logger.log_form_submit(
+            form_data=parsed_data,
+            attachment_name=attachment.filename if attachment else None,
+            status="ERROR",
+            error_message=f"Data validation error: {e}",
+            request_id=request_id,
+            user_ip=user_ip
+        )
+        
         raise HTTPException(status_code=400, detail=f"Invalid data: {e}")
-
-    # Generate unique request ID
-    now = datetime.now().strftime("%Y%m%d-%H%M%S")
-    rand = random.randint(100, 999)
-    request_id = f"REQ-{now}-{rand}"
-    logger.info(f"Generated request ID: {request_id}")
 
     # Save attachment with new name if exists
     attachment_saved = False
@@ -124,11 +172,24 @@ async def submit_transport_request(
     # Save data to Excel
     excel_saved = save_to_excel(request_id, data_dict, attachment_saved)
     
+    # Calculate processing time
+    processing_time = int((time.time() - start_time) * 1000)  # milliseconds
+    
+    # Log successful completion
+    app_logger.log_form_submit(
+        form_data=data_dict,
+        attachment_name=attachment.filename if attachment else None,
+        status="SUCCESS",
+        request_id=request_id,
+        user_ip=user_ip
+    )
+    
     response_data = {
         "success": True,
         "request_id": request_id,
         "attachment_saved": attachment_saved,
         "excel_saved": excel_saved,
+        "processing_time_ms": processing_time,
         "data_received": data_dict
     }
     
