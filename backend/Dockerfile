@@ -14,11 +14,11 @@ COPY ./zscaler.crt /usr/local/share/ca-certificates/
 RUN apt-get update && \
     apt-get install -y ca-certificates curl && \
     update-ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* || true
 
 # Install Python dependencies
 COPY ./backend/requirements_fastapi.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --no-cache-dir -r requirements.txt
 
 # Copy backend code
 COPY ./backend .

@@ -192,12 +192,65 @@ cd frontend && npm test
 .\run_tests.ps1 all
 ```
 
-## 📊 **Data Export**
+## 📊 **Data Export & Logging**
 
 ### Generated Files
 - **Excel**: `backend/data/transport_requests.xlsx`
 - **JSON**: `backend/data/transport_requests.json`
 - **Attachments**: `backend/attachments/attachment_[REQUEST_ID].[ext]`
+
+### Logging System
+
+#### 📁 Log Files Location
+- **Backend Logs**: `backend/logs/transport_app_YYYYMMDD.jsonl`
+- **Frontend Logs**: Browser localStorage (DevTools → Application → Local Storage)
+
+#### 📝 Log Structure
+
+**Backend Log Format (JSON Lines):**
+```json
+{
+  "timestamp": "2025-10-22T10:30:45.123Z",
+  "level": "INFO",
+  "event": "form_submit",
+  "request_id": "REQ-20251022-103045-456",
+  "user_ip": "127.0.0.1",
+  "form_data": {
+    "deliveryNoteNumber": "DN-123456",
+    "truckLicensePlates": "ABC-1234",
+    "trailerLicensePlates": "XYZ-5678",
+    "carrierCountry": "Poland",
+    "carrierTaxCode": "1234567890",
+    "carrierFullName": "Transport Company Ltd",
+    "borderCrossing": "Terespol-Brest",
+    "borderCrossingDate": "2025-10-25"
+  },
+  "attachments": ["file1.pdf", "file2.jpg"],
+  "processing_time_ms": 145,
+  "status": "SUCCESS"
+}
+```
+
+**Frontend Log Format (localStorage):**
+```json
+{
+  "timestamp": "2025-10-22T10:30:45.123Z",
+  "type": "FORM_SUBMIT",
+  "data": {
+    "form_values": {...},
+    "attachment_count": 2,
+    "request_id": "REQ-20251022-103045-456"
+  },
+  "status": "SUCCESS"
+}
+```
+
+#### 🔍 Log Events Tracked
+- **Form Submissions** - Complete form data and attachments
+- **API Requests** - Success/failure status and timing
+- **Network Errors** - Connection issues and retries
+- **File Uploads** - Attachment names and processing status
+- **Validation Errors** - Field-specific validation failures
 
 ### Request ID Format
 ```
@@ -218,19 +271,6 @@ http://localhost/
 ```
 
 See [DOCKER_README.md](DOCKER_README.md) for detailed Docker setup.
-
-## 🔧 **Development**
-
-### Code Quality
-- ✅ **ESLint** - JavaScript linting with Jest support
-- ✅ **Prettier** - Code formatting (via ESLint)
-- ✅ **Type Safety** - PropTypes validation in React
-- ✅ **Error Boundaries** - Comprehensive error handling
-
-### Git Workflow
-- ✅ **package-lock.json** - Committed for deterministic builds
-- ✅ **.gitignore** - Properly configured for Node.js and Python
-- ✅ **Clean History** - Organized commit structure
 
 ## 📚 **API Endpoints**
 
@@ -269,5 +309,3 @@ For questions or issues:
 3. Check Docker setup in [DOCKER_README.md](DOCKER_README.md)
 
 ---
-
-**Status**: ✅ Production Ready - All tests passing, comprehensive documentation, Docker deployment available.

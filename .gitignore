@@ -151,3 +151,5 @@ all_data.json
 log.txt
 /backend/attachments
 backend/data/transport_requests.json
+/backend/logs
+/backend/data
